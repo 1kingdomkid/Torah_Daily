@@ -1,35 +1,51 @@
 const today = new Date();
+
 document.getElementById('todayDate').textContent =
-  today.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  today.toLocaleDateString(undefined, {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 
 const isoDate = today.toISOString().slice(0, 10);
-const hebcalWeeklyUrl = `https://www.hebcal.com/shabbat?cfg=json&gy=${today.getFullYear()}&gm=${today.getMonth()+1}&gd=${today.getDate()}&g2h=1`;
-const hebcalLeyningUrl = `https://www.hebcal.com/leyning?cfg=json&date=${isoDate}&v=1`;
+
+const shabbatUrl = `https://www.hebcal.com/shabbat?cfg=json&geonameid=YY&date=${isoDate}`;
+const leyningUrl = `https://www.hebcal.com/leyning?cfg=json&date=${isoDate}&v=1`;
+
+async function fetchJson(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+function formatParsha(item) {
+  if (!item) return 'Weekly portion not found.';
+  const text = item.hebrew || item.title || item.text || 'Unknown';
+  return `Parashat ${text}`;
+}
+
+function formatAliyot(data) {
+  const items = data?.items || [];
+  if (!items.length) return 'No daily reading found for today.';
+  return items.map((item, i) => {
+    const title = item._text || item.title || item.hebrew || item.text || 'Aliyah';
+    return `${i + 1}. ${title}`;
+  }).join('\n');
+}
 
 async function loadData() {
   try {
-    const [weeklyRes, leyningRes] = await Promise.all([
-      fetch(hebcalWeeklyUrl),
-      fetch(hebcalLeyningUrl)
-    ]);
+    const weekly = await fetchJson(shabbatUrl);
+    const leyning = await fetchJson(leyningUrl);
 
-    const weekly = await weeklyRes.json();
-    const leyning = await leyningRes.json();
+    const parsha = (weekly.items || []).find(item => item.category === 'parashat' || item.category === 'parsha');
+    document.getElementById('weeklyStatus').textContent = formatParsha(parsha);
 
-    const parsha = weekly?.items?.find(item => item.category === 'parashat');
-    const weeklyText = parsha
-      ? `Parashat ${parsha.hebrew || parsha.title || parsha.text || 'Unknown'}`
-      : 'Weekly portion not found.';
-    document.getElementById('weeklyStatus').textContent = weeklyText;
-
-    const aliyot = leyning?.items || [];
-    const dailyText = aliyot.length
-      ? aliyot.map((item, i) => `${i + 1}. ${item?._text || item?.title || item?.hebrew || 'Aliyah'}`).join('\n')
-      : 'No daily leyning data found for today.';
-    document.getElementById('dailyStatus').textContent = dailyText;
+    document.getElementById('dailyStatus').textContent = formatAliyot(leyning);
 
     document.getElementById('details').textContent = JSON.stringify({
-      weekly,
+      shabbat: weekly,
       leyning
     }, null, 2);
   } catch (err) {
