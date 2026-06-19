@@ -27,21 +27,38 @@ function weeklyText(parashah) {
   return parashah.hebrew || parashah.title || parashah.text || 'Weekly portion found.';
 }
 
-function dailyText(parashah, leyning) {
-  const aliyot = parashah?.leyning && typeof parashah.leyning === 'object'
+function aliyahCards(parashah, leyning) {
+  const items = parashah?.leyning && typeof parashah.leyning === 'object'
     ? Object.entries(parashah.leyning)
         .filter(([k]) => !['torah', 'haftarah', 'triennial'].includes(k))
-        .map(([k, v]) => `${k}. ${v}`)
+        .map(([k, v]) => ({ key: k, value: v }))
     : [];
 
-  if (aliyot.length) return aliyot.join('\n');
+  if (items.length) return items;
 
-  const items = leyning?.items || [];
-  if (items.length) {
-    return items.map((x, i) => `${i + 1}. ${x._text || x.title || x.hebrew || x.text || 'Aliyah'}`).join('\n');
+  if (Array.isArray(leyning?.items)) {
+    return leyning.items.map((x, i) => ({
+      key: String(i + 1),
+      value: x._text || x.title || x.hebrew || x.text || 'Aliyah'
+    }));
   }
 
-  return 'No aliyah data found for today.';
+  return [];
+}
+
+function renderAliyot(container, parashah, leyning) {
+  const items = aliyahCards(parashah, leyning);
+  if (!items.length) {
+    container.textContent = 'No aliyah data found for today.';
+    return;
+  }
+
+  container.innerHTML = items.map(item => `
+    <div class="aliyah">
+      <div class="aliyah-num">Aliyah ${item.key}</div>
+      <div class="aliyah-text">${item.value}</div>
+    </div>
+  `).join('');
 }
 
 async function main() {
@@ -50,9 +67,9 @@ async function main() {
     const parashah = getParashah(weekly);
 
     document.getElementById('weeklyStatus').textContent = weeklyText(parashah);
-    document.getElementById('dailyStatus').textContent = dailyText(parashah, leyning);
+    renderAliyot(document.getElementById('dailyStatus'), parashah, leyning);
 
-    const output = {
+    document.getElementById('details').textContent = JSON.stringify({
       date: weekly.date || iso,
       parashah: parashah ? {
         title: parashah.title,
@@ -61,9 +78,7 @@ async function main() {
         leyning: parashah.leyning || null
       } : null,
       leyning
-    };
-
-    document.getElementById('details').textContent = JSON.stringify(output, null, 2);
+    }, null, 2);
   } catch (e) {
     document.getElementById('weeklyStatus').textContent = 'Error loading weekly portion.';
     document.getElementById('dailyStatus').textContent = 'Error loading daily aliyah.';
