@@ -9,24 +9,27 @@
 <body>
   <main class="app">
     <header class="card hero">
-      <h1>Torah Daily</h1>
-      <p>Weekly parashah and daily aliyah for today.</p>
+      <div class="badge">Torah Daily</div>
+      <h1>Weekly Portion + Daily Aliyah</h1>
+      <p>Built for quick access from GitHub Pages.</p>
       <div class="date" id="todayDate">Loading date...</div>
     </header>
 
-    <section class="card">
-      <h2>This Week</h2>
-      <div id="weeklyStatus">Loading weekly portion...</div>
+    <section class="grid">
+      <article class="card">
+        <h2>Weekly Portion</h2>
+        <div id="weeklyStatus">Loading...</div>
+      </article>
+
+      <article class="card">
+        <h2>Daily Aliyah</h2>
+        <div id="dailyStatus">Loading...</div>
+      </article>
     </section>
 
     <section class="card">
-      <h2>Daily Aliyah</h2>
-      <div id="dailyStatus">Loading daily reading...</div>
-    </section>
-
-    <section class="card">
-      <h2>Details</h2>
-      <pre id="details">Waiting for data...</pre>
+      <h2>Raw Data</h2>
+      <pre id="details">Loading...</pre>
     </section>
   </main>
 
