@@ -22,28 +22,26 @@ function getParashah(data) {
   return (data.items || []).find(x => x.category === 'parashat' || x.category === 'parsha') || null;
 }
 
-function weeklyText(parashah) {
-  if (!parashah) return 'No weekly portion found.';
-  return parashah.hebrew || parashah.title || parashah.text || 'Weekly portion found.';
-}
-
 function aliyahCards(parashah, leyning) {
-  const items = parashah?.leyning && typeof parashah.leyning === 'object'
-    ? Object.entries(parashah.leyning)
-        .filter(([k]) => !['torah', 'haftarah', 'triennial'].includes(k))
-        .map(([k, v]) => ({ key: k, value: v }))
-    : [];
+  const out = [];
 
-  if (items.length) return items;
+  if (parashah?.leyning && typeof parashah.leyning === 'object') {
+    for (const [k, v] of Object.entries(parashah.leyning)) {
+      if (['torah', 'haftarah', 'triennial'].includes(k)) continue;
+      out.push({ key: k, value: v });
+    }
+    if (parashah.leyning.torah) out.unshift({ key: 'Torah', value: parashah.leyning.torah });
+    if (parashah.leyning.haftarah) out.push({ key: 'Haftarah', value: parashah.leyning.haftarah });
+  }
 
-  if (Array.isArray(leyning?.items)) {
-    return leyning.items.map((x, i) => ({
+  if (!out.length && Array.isArray(leyning?.items)) {
+    leyning.items.forEach((x, i) => out.push({
       key: String(i + 1),
       value: x._text || x.title || x.hebrew || x.text || 'Aliyah'
     }));
   }
 
-  return [];
+  return out;
 }
 
 function renderAliyot(container, parashah, leyning) {
@@ -55,7 +53,7 @@ function renderAliyot(container, parashah, leyning) {
 
   container.innerHTML = items.map(item => `
     <div class="aliyah">
-      <div class="aliyah-num">Aliyah ${item.key}</div>
+      <div class="aliyah-num">${item.key}</div>
       <div class="aliyah-text">${item.value}</div>
     </div>
   `).join('');
@@ -66,7 +64,9 @@ async function main() {
     const [weekly, leyning] = await Promise.all([getJson(shabbatUrl), getJson(leyningUrl)]);
     const parashah = getParashah(weekly);
 
-    document.getElementById('weeklyStatus').textContent = weeklyText(parashah);
+    document.getElementById('weeklyStatus').textContent =
+      parashah ? (parashah.hebrew || parashah.title || parashah.text || 'Weekly portion found.') : 'No weekly portion found.';
+
     renderAliyot(document.getElementById('dailyStatus'), parashah, leyning);
 
     document.getElementById('details').textContent = JSON.stringify({
