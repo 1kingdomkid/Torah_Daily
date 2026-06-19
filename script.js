@@ -12,62 +12,58 @@ document.getElementById('todayDate').textContent =
 const shabbatUrl = `https://www.hebcal.com/shabbat?cfg=json&date=${iso}`;
 const leyningUrl = `https://www.hebcal.com/leyning?cfg=json&date=${iso}&v=1`;
 
-function daysUntil(target) {
-  const ms = new Date(target).setHours(0,0,0,0) - new Date().setHours(0,0,0,0);
-  return Math.max(0, Math.round(ms / 86400000));
-}
-
 async function getJson(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Request failed: ${res.status}`);
   return res.json();
 }
 
-function weeklyText(data) {
-  const item = (data.items || []).find(x => x.category === 'parashat' || x.category === 'parsha');
-  return item ? (item.hebrew || item.title || item.text || 'Weekly portion found.') : 'No weekly portion found.';
+function getParashah(data) {
+  return (data.items || []).find(x => x.category === 'parashat' || x.category === 'parsha') || null;
 }
 
-function dailyText(data) {
-  const items = data.items || [];
-  if (!items.length) return 'No aliyah data found for today.';
-  return items.map((x, i) => `${i + 1}. ${x._text || x.title || x.hebrew || x.text || 'Aliyah'}`).join('\n');
+function weeklyText(parashah) {
+  if (!parashah) return 'No weekly portion found.';
+  return parashah.hebrew || parashah.title || parashah.text || 'Weekly portion found.';
+}
+
+function dailyText(parashah, leyning) {
+  const aliyot = parashah?.leyning && typeof parashah.leyning === 'object'
+    ? Object.entries(parashah.leyning)
+        .filter(([k]) => !['torah', 'haftarah', 'triennial'].includes(k))
+        .map(([k, v]) => `${k}. ${v}`)
+    : [];
+
+  if (aliyot.length) return aliyot.join('\n');
+
+  const items = leyning?.items || [];
+  if (items.length) {
+    return items.map((x, i) => `${i + 1}. ${x._text || x.title || x.hebrew || x.text || 'Aliyah'}`).join('\n');
+  }
+
+  return 'No aliyah data found for today.';
 }
 
 async function main() {
   try {
     const [weekly, leyning] = await Promise.all([getJson(shabbatUrl), getJson(leyningUrl)]);
+    const parashah = getParashah(weekly);
 
-    const nextShabbat = (weekly.items || []).find(x => x.category === 'parashat' || x.category === 'parsha');
-    document.getElementById('weeklyStatus').textContent = weeklyText(weekly);
-    document.getElementById('dailyStatus').textContent = dailyText(leyning);
+    document.getElementById('weeklyStatus').textContent = weeklyText(parashah);
+    document.getElementById('dailyStatus').textContent = dailyText(parashah, leyning);
 
-    const summary = {
-      weekly,
+    const output = {
+      date: weekly.date || iso,
+      parashah: parashah ? {
+        title: parashah.title,
+        hebrew: parashah.hebrew,
+        category: parashah.category,
+        leyning: parashah.leyning || null
+      } : null,
       leyning
     };
 
-    document.getElementById('details').textContent = JSON.stringify(summary, null, 2);
-
-    const shabbatTitle = nextShabbat ? (nextShabbat.hebrew || nextShabbat.title || nextShabbat.text || '') : '';
-    const titleLine = shabbatTitle ? `Next portion: ${shabbatTitle}` : 'Next portion not found';
-    const dateLine = weekly?.date ? `Hebcal date: ${weekly.date}` : '';
-    document.title = `Torah Daily - ${titleLine}`;
-    const extra = document.createElement('p');
-    extra.style.marginTop = '12px';
-    extra.style.color = '#94a3b8';
-    extra.textContent = dateLine;
-    document.querySelector('.hero').appendChild(extra);
-
-    const shabbat = weekly?.date || null;
-    if (shabbat) {
-      const count = daysUntil(shabbat);
-      const countEl = document.createElement('p');
-      countEl.style.marginTop = '8px';
-      countEl.style.color = '#f59e0b';
-      countEl.textContent = count === 0 ? 'Shabbat is today.' : `${count} day(s) until the current Hebcal date.`;
-      document.querySelector('.hero').appendChild(countEl);
-    }
+    document.getElementById('details').textContent = JSON.stringify(output, null, 2);
   } catch (e) {
     document.getElementById('weeklyStatus').textContent = 'Error loading weekly portion.';
     document.getElementById('dailyStatus').textContent = 'Error loading daily aliyah.';
