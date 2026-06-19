@@ -64,6 +64,24 @@ h2 {
   color:var(--text);
 }
 
+.aliyah {
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  margin-bottom:10px;
+  background:rgba(15,23,42,.7);
+}
+
+.aliyah-num {
+  color:var(--accent);
+  font-weight:700;
+  margin-bottom:6px;
+}
+
+.aliyah-text {
+  color:var(--text);
+}
+
 pre {
   white-space:pre-wrap;
   word-break:break-word;
