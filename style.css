@@ -29,7 +29,7 @@ body {
   font-size:clamp(2rem,4vw,3rem);
 }
 
-.hero p, .date, #weeklyStatus, #dailyStatus, pre {
+.hero p, .date, #weeklyStatus, pre {
   color:var(--muted);
 }
 
@@ -80,6 +80,40 @@ h2 {
 
 .aliyah-text {
   color:var(--text);
+}
+
+.aliyah-links {
+  display:flex;
+  gap:10px;
+  margin-top:8px;
+}
+
+.link {
+  font-size:.85rem;
+  color:var(--accent);
+  text-decoration:none;
+  border:1px solid rgba(245,158,11,.25);
+  background:rgba(245,158,11,.08);
+  padding:4px 8px;
+  border-radius:8px;
+}
+
+.link:hover {
+  background:rgba(245,158,11,.15);
+}
+
+.link.bg {
+  color:#f59e0b;
+}
+
+.link.sf {
+  color:#60a5fa;
+  border-color:rgba(96,165,250,.25);
+  background:rgba(96,165,250,.08);
+}
+
+.link.sf:hover {
+  background:rgba(96,165,250,.15);
 }
 
 pre {
