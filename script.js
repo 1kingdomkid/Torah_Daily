@@ -44,6 +44,34 @@ function aliyahCards(parashah, leyning) {
   return out;
 }
 
+function normalizeBook(book) {
+  // Normalize "I Samuel" -> "1Samuel", "Numbers" -> "Numbers", etc.
+  return book
+    .replace(/\s+/g, '')              // remove spaces
+    .replace(/I /g, '1')              // I Samuel -> 1Samuel
+    .replace(/II /g, '2')             // II Samuel -> 2Samuel
+    .replace(/III /g, '3');           // III Samuel -> 3Samuel (if needed)
+}
+
+function toSefariaRef(value) {
+  // value like "Numbers 16:1-16:13" or "I Samuel 11:14-12:22"
+  const [book, rest] = value.split(' ');
+  const normalizedBook = normalizeBook(book);
+  const sections = rest.replace(/:/g, '.').replace(/-/g, '-'); // "16:1-16:13" -> "16.1-16.13"
+  return `${normalizedBook}.${sections}`;
+}
+
+function bibleGatewayUrl(value, version = 'ESV') {
+  // value like "Numbers 16:1-16:13"
+  const passage = value.replace(/ /g, '+');
+  return `https://www.biblegateway.com/bible?passage=${passage}&version=${version}&language=en`;
+}
+
+function sefariaUrl(value) {
+  const ref = toSefariaRef(value);
+  return `https://www.sefaria.org/${ref}`;
+}
+
 function renderAliyot(container, parashah, leyning) {
   const items = aliyahCards(parashah, leyning);
   if (!items.length) {
@@ -51,12 +79,20 @@ function renderAliyot(container, parashah, leyning) {
     return;
   }
 
-  container.innerHTML = items.map(item => `
-    <div class="aliyah">
-      <div class="aliyah-num">${item.key}</div>
-      <div class="aliyah-text">${item.value}</div>
-    </div>
-  `).join('');
+  container.innerHTML = items.map(item => {
+    const bgLink = bibleGatewayUrl(item.value);
+    const sfLink = sefariaUrl(item.value);
+    return `
+      <div class="aliyah">
+        <div class="aliyah-num">${item.key}</div>
+        <div class="aliyah-text">${item.value}</div>
+        <div class="aliyah-links">
+          <a class="link bg" href="${bgLink}" target="_blank" rel="noopener">BibleGateway</a>
+          <a class="link sf" href="${sfLink}" target="_blank" rel="noopener">Sefaria</a>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 async function main() {
